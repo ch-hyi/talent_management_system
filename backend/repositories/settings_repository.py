@@ -119,3 +119,9 @@ class SettingsRepository:
         settings.score_threshold = threshold
         self.save(settings)
         return settings
+
+    def get_current_info(self,) ->str:
+        json_dir = self._BACKEND_DIR / "info.json"
+        with open(json_dir, "r", encoding="utf-8") as f:
+            return f.read()
+        

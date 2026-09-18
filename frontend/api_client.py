@@ -726,3 +726,18 @@ class SettingsAPI:
         return api_call("POST", f"{SettingsAPI.BASE}/restart", json={
             "operator": operator
         })
+
+    def get_currnet_info(operator: str)->APIResponse:
+        return api_call("GET", f"{SettingsAPI.BASE}/get_currnet_info", json={
+            "operator": operator
+        })
+    
+    def get_update_info( operator)->APIResponse:
+        return api_call("GET", f"{SettingsAPI.BASE}/get_update_info", json={
+            "operator": operator
+        })
+    
+    def update (operator):
+        return api_call("POST", f"{SettingsAPI.BASE}/update", json={
+            "operator": operator
+        })

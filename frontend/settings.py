@@ -513,9 +513,35 @@ $$candidate_name$$
         footer = st.text_input("Footer",settings.theme.footer)
         settings.theme.footer = footer
 
-    elif selected_section =="Theme":
-        pass
+    elif selected_section =="Information":
+        info = json.loads(SettingsAPI.get_currnet_info(st.session_state["username"]).data)
+        st.markdown("### Version")
+        st.write(info["version"])
+        st.markdown("### Name")
+        st.write(info["name"])
+        st.markdown("### Date")
+        st.write(info["date"])
+        st.markdown("### Summary")
+        st.write(info["summary"])
 
+        check = False
+        if "update_info" in st.session_state:
+            if "version" in st.session_state["update_info"] :
+                st.markdown("### Update Version")
+                st.write(update_info["version"])
+                st.markdown("### Update Name")
+                st.write(update_info["name"])
+                st.markdown("### Update Date")
+                st.write(update_info["date"])
+                st.markdown("### Update Summary")
+                st.write(update_info["summary"])
+        else:
+            check = st.button("Check for updates")
+        if check:
+            update_info = SettingsAPI.get_update_info(st.session_state["username"]).data
+            st.write(update_info)
+            st.session_state["update_info"] = update_info
+    
     
     # -----------------------------------------------------
     # Restart System

@@ -270,3 +270,42 @@ async def restart(
         operator=request.operator
     )
     return result.to_dict()
+
+@router.get("/get_currnet_info")
+async def get_currnet_info(
+    request:RestartRequest,
+    service: SettingsService = Depends(
+        get_settings_service
+    )
+):
+
+    result = service.get_currnet_info(
+            operator=request.operator
+    )
+    return result.to_dict()
+
+@router.get("/get_update_info")
+async def get_update_info(
+    request:RestartRequest,
+    service: SettingsService = Depends(
+        get_settings_service
+    )
+):
+
+    result = service.get_update_info(
+            operator=request.operator
+    )
+    return result.to_dict()
+
+@router.post("/update")
+async def update(
+    request:RestartRequest,
+    service: SettingsService = Depends(
+        get_settings_service
+    )
+):
+
+    result = service.update(
+            operator=request.operator
+    )
+    return result.to_dict()
