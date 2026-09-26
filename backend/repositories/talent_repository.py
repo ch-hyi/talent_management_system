@@ -9,6 +9,13 @@ from ..database.connection import db_manager
 # ✅ 導入 Models
 from ..models.talent import TalentFilter, Talent, TalentStatistics ,OCRDraft
 import pandas as pd
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+current_file = Path(__file__).resolve()
+dotenv_path = current_file.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=dotenv_path)
+
 
 class TalentRepository:   
     """人才資料庫操作"""
@@ -557,10 +564,10 @@ class TalentRepository:
         returns:欄位顯示選項
         """
         dic = {}
-        df_taiwan = pd.read_excel("C:/Users/rchang4/talent_system/backend/data/taiwan_zipcode_clean.xlsx")
+        df_taiwan = pd.read_excel(os.getenv("TAIWAN_ZIPCODE_FILE"))
         city = list(set(df_taiwan["縣市"]))
         district = df_taiwan["區"].tolist()
-        discipline = pd.read_excel("C:/Users/rchang4/talent_system/backend/data/學門.xlsx")["名稱"].tolist()
+        discipline = pd.read_excel(os.getenv("DISCIPLINE_FILE"))["名稱"].tolist()
         
 
         dic["city"] = city 

@@ -1304,7 +1304,7 @@ def show_vacancy_page():
                     st.rerun()
                 else:
                     VacancyAPI.delete_vacancy(vacancy_ids=selected_vacancy_id,operator=st.session_state["username"])
-                    st.success(f"{safe_text("position_title")} has been Deleted")
+                    st.success(f"{safe_text('position_title')} has been Deleted")
                     st.session_state[
                         "create_vac"
                     ] = False

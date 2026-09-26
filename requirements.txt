@@ -21,3 +21,10 @@ pywin32
 streamlit-authenticator
 streamlit-quill
 extra-streamlit-components
+bs4
+geopy
+beautifulsoup4
+plotly
+docling
+pypdf
+odfpy

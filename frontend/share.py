@@ -137,8 +137,8 @@ def render_candidate_readonly(person):
 
             resume_url = (
                 f"/resume?"
-                f"source={person["source"]}"
-                f"&source_id={person["source_id"]}"
+                f"source={person['source']}"
+                f"&source_id={person['source_id']}"
             )
 
             st.markdown(f"**📁 [Open Resume]({resume_url})**")

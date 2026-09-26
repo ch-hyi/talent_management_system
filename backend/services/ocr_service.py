@@ -1,3 +1,24 @@
+import os
+import sys
+import ctypes
+
+# 1. 強制讓 Python 優先搜尋 venv 的 Library，阻斷 Anaconda 污染
+venv_path = os.path.join(os.path.dirname(__file__), "..", "..", "venv", "Lib", "site-packages")
+if os.path.exists(venv_path) and venv_path not in sys.path:
+    sys.path.insert(0, venv_path)
+
+# 2. 顯式載入 vcomp140.dll
+try:
+    ctypes.CDLL('vcomp140.dll')
+except Exception:
+    pass
+
+# 3. 解決 Intel MKL 重複載入與 Windows DLL 衝突
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+# --- 原本的 import 放在這下面 ---
+from ..parser.parser_ocr import parse_resume
+
 from ..parser.parser_ocr import parse_resume
 from celery import Celery
 from celery.signals import worker_process_init

@@ -1013,7 +1013,7 @@ def render_candidate_panal(selected_people,data ):
                 score = float(person.get('score', 0) or 0)
                 score_color = "green" if score >= 60 else "red"
                 st.write(f"**AI Recommendation Score:** :{score_color}[**{score:.2f}**]")
-                st.write(f"**Distance** {person["score_distance"]} ,**Experience** {person["score_experience"]} ,**Age** {person["score_age"]} ,**Education** {person["score_education"]}")
+                st.write(f"**Distance** {person['score_distance']} ,**Experience** {person['score_experience']} ,**Age** {person['score_age']} ,**Education** {person['score_education']}")
         
         # ==========================================
         # AI 生成的候選人摘要
@@ -1073,8 +1073,8 @@ def render_candidate_panal(selected_people,data ):
         if person.get('msg_backup_path'):
             resume_url = (
                 f"/resume?"
-                f"source={person["source"]}"
-                f"&source_id={person["source_id"]}"
+                f"source={person['source']}"
+                f"&source_id={person['source_id']}"
             )
 
             st.markdown(f"**📁 [Open Resume]({resume_url})**")
@@ -2229,7 +2229,7 @@ def show_talent_page():
             result = load_initial_data({})
             st.session_state["changed"] = detect_changes(st.session_state["edited_df"])
 
-            st.success(f"✅ Found {st.session_state["loader_state"]['total_count']} Candidate(s)")
+            st.success(f"✅ Found {st.session_state['loader_state']['total_count']} Candidate(s)")
             st.rerun()
         
         if apply_filters or st.session_state["current_talent_data"].empty:
@@ -2237,7 +2237,7 @@ def show_talent_page():
                 result = load_initial_data(filters_dict)
                 st.session_state["changed"] = detect_changes(st.session_state["edited_df"])
 
-                st.success(f"✅ Found {st.session_state["loader_state"]['total_count']} Candidate(s)")
+                st.success(f"✅ Found {st.session_state['loader_state']['total_count']} Candidate(s)")
         
         # 顯示載入狀態
         if st.session_state["loader_state"]:
@@ -2320,7 +2320,7 @@ def show_talent_page():
             st.download_button(
                 label="Download Table",
                 data=csv,
-                file_name=f"talents_{datetime.now().strftime("%Y-%m-%d")}.csv",
+                file_name=f"talents_{datetime.now().strftime('%Y-%m-%d')}.csv",
                 mime="text/csv"
             )
         dynamic_editor_key = f"talent_editor_v{st.session_state['editor_version']}"
@@ -2573,7 +2573,7 @@ def show_log_page():
             st.download_button(
                 label="Download Table",
                 data=csv,
-                file_name=f"talents_{datetime.now().strftime("%Y-%m-%d")}.csv",
+                file_name=f"talents_{datetime.now().strftime('%Y-%m-%d')}.csv",
                 mime="text/csv"
             )
         # 整理要呈現給使用者看的欄位

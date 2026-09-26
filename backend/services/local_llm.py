@@ -10,6 +10,7 @@ from difflib import get_close_matches
 import pandas as pd
 import re
 import random
+import os
 from typing import Optional, Tuple, Dict
 from pathlib import Path
 import requests
@@ -24,6 +25,7 @@ from celery import Celery
 from dataclasses import dataclass
 from . import config
 import logging
+from dotenv import load_dotenv
 from ..config import REDIS_URL
 import traceback
 
@@ -36,7 +38,9 @@ backend_service = Celery('mail_scoring_system',
 # 全局評分服務
 scoring_service = None
 talent_service = None
-
+current_file = Path(__file__).resolve()
+dotenv_path = current_file.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
 
 @dataclass
@@ -139,9 +143,10 @@ class ScoringService:
 
     def __init__(
         self,
-        discipline_file_path: str = "C:/Users/rchang4/talent_system/backend/data/學門.xlsx",
-        sub_discipline_file_path: str = "C:/Users/rchang4/talent_system/backend/data/學類.xlsx",
-        model_name: str = 'qwen3.5_9b',
+        discipline_file_path: str = os.getenv("DISCIPLINE_FILE"),
+        sub_discipline_file_path: str  =  os.getenv("SUB_DISCIPLINE_FILE"),
+        think :int = int(os.getenv("THINK")),
+        model_name: str = os.getenv("OLLAMA_MODEL"),
         num_ctx: int = 6144,
         temperature: float = 0.2
     ):
@@ -161,6 +166,7 @@ class ScoringService:
         self.vacancy_service = VacancyService(self.vacancy_repo,self.log_repo)
         self.discipline_file_path = Path(discipline_file_path)
         self.sub_discipline_file_path = Path(sub_discipline_file_path)
+        self.think = think
         self.model_name = model_name
         self.num_ctx = num_ctx
         self.temperature = temperature
@@ -441,7 +447,7 @@ class ScoringService:
                 'temperature': 0.5,
                 'seed': random_seed
             },
-            think=False
+            think=self.think
         )
         full_content = response['message'].get('content', '')
         result = full_content.strip()
@@ -580,7 +586,7 @@ Bureau Veritas的招募團隊
                 'temperature': 0.3,
                 'seed': random_seed
             },
-            think=False
+            think=self.think
         )
         
         full_content_special = response_special['message'].get('content', '')
@@ -683,7 +689,7 @@ Bureau Veritas的招募團隊
                 'seed': random_seed,
                 
             },
-            think=False
+            think=self.think
         )
         full_content_topk = response_topk['message'].get('content', '')
         result_topk = full_content_topk.strip()
@@ -763,7 +769,7 @@ Bureau Veritas的招募團隊
                 'num_ctx': self.num_ctx,
                 'temperature': 0,
                 'seed': random_seed
-            },think=False
+            },think=self.think
             )
 
             full_content_answer = response_answer['message'].get('content', '')
@@ -805,8 +811,7 @@ Bureau Veritas的招募團隊
             return 1.0  # 不需要英文,返回滿分
         
         prefill_text = (
-            "<think>\n"
-            "我正在執行履歷比對任務。我的審閱標準如下：\n"
+            "我需要執行履歷比對任務。我的審閱標準如下：\n"
             "- 母語：英文能力如母語者。\n"
             "- 流利：任何商務、技術英文對談都能應對自如但不如母語者能運用各種流行、俚語或特殊用法。\n"
             "- 尚可：足以應對日常對話，並且練習後可以進行專業英文報告。\n"
@@ -815,7 +820,6 @@ Bureau Veritas的招募團隊
             "- 完全不會：完全無法溝通且也無法閱讀、聽懂幾乎所有英文單字。\n\n"
             "我要嚴謹分類該候選人的英文程度，並且只分類使用者所提供的類別(如 '流利')，"
             "內容絕不包含任何描述或解釋的字語。\n"
-            "</think>"
         )
         
         response = ollama.chat(
@@ -827,6 +831,8 @@ Bureau Veritas的招募團隊
                         "你是一個嚴格且精準的技術人資系統。"
                         "你的唯一任務是嚴謹的檢驗履歷中暗藏或是明示的任何英文能力資訊，"
                         "並根據下列指引進行 母語、流利、尚可、待加強、難以溝通、完全不會 的分類。"
+                        ""
+                        f"{prefill_text}"
                     )
                 },
                 {
@@ -842,11 +848,12 @@ Bureau Veritas的招募團隊
                 'num_ctx': self.num_ctx,
                 'temperature': self.temperature,
                 'seed': random_seed
-            }
+            },
+            think = self.think
         )
         
-        full_content = response['message'].get('content', '')
-        result = full_content.replace(prefill_text, "").strip()
+        result = response['message'].get('content', '')
+
         print(result)
         score = self.ENGLISH_LEVEL_MAP.get(result, 0) / 5.0
         return score
@@ -862,13 +869,7 @@ Bureau Veritas的招募團隊
         Returns:
             包含 years, company, title 的字典
         """
-        prefill_text = (
-            "<think>\n"
-            "我已完全讀懂使用者對我的命令與輸出條件限制，"
-            "我身為專業的人資，我會仔細閱讀履歷並嚴禁任何廢話直接輸出使用者要求的格式與資訊，"
-            "接下來為乾淨準確的輸出：\n"
-            "</think>"
-        )
+
         logging.info(resume_body)
         response = ollama.chat(
             model=self.model_name,
@@ -887,21 +888,18 @@ Bureau Veritas的招募團隊
                 {
                     "role": "user",
                     "content": f"此為其履歷：\n{resume_body.strip()}"
-                },
-                {
-                    "role": "assistant",
-                    "content": prefill_text
                 }
             ],
             options={
                 'num_ctx': self.num_ctx,
                 'temperature': self.temperature,
                 'seed': random_seed
-            }
+            },
+            think = self.think
         )
         
-        full_content = response['message'].get('content', '')
-        result = full_content.replace(prefill_text, "").strip()
+        result = response['message'].get('content', '')
+
         # 解析結果
         try:
             lines = result.split("\n")
@@ -1032,10 +1030,8 @@ Bureau Veritas的招募團隊
     def _classify_discipline(self, education_text: str, random_seed: int) -> str:
         """分類學門"""
         prefill_text = (
-            "<think>\n"
-            "我正在執行學歷判斷任務，我需要根據上面的指引進行最嚴謹專業的學歷科系判斷\n"
-            "接下來我將直接進行上述指令提示的輸出，並且嚴格遵守指令要求的格式。\n"
-            "</think>"
+            "我將要執行學歷判斷任務，我需要根據上面的指引進行最嚴謹專業的學歷科系判斷\n"
+            "接下來我將直接進行下列指令提示的輸出，並且嚴格遵守指令要求的格式。\n"
         )
         
         discipline_nocode = self.df_discipline.drop("代碼", axis=1)
@@ -1051,18 +1047,19 @@ Bureau Veritas的招募團隊
         response = ollama.chat(
             model=self.model_name,
             messages=[
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": prefill_text}
+                {"role":"system", "content":prefill_text},
+                {"role": "user", "content": prompt}
             ],
             options={
                 'num_ctx': 4096,
                 'temperature': 0.1,
                 'seed': random_seed
-            }
+            },
+            think = self.think
         )
         
-        full_content = response['message'].get('content', '')
-        result = full_content.replace(prefill_text, "").strip()
+        result = response['message'].get('content', '')
+
         return result
     
     def _classify_sub_discipline(
@@ -1072,12 +1069,7 @@ Bureau Veritas的招募團隊
         random_seed: int
     ) -> str:
         """分類學類"""
-        prefill_text = (
-            "<think>\n"
-            "我正在執行學歷判斷任務，我需要根據上面的指引進行最嚴謹專業的學歷科系判斷\n"
-            "接下來我將直接進行上述指令提示的輸出，並且嚴格遵守指令要求的格式。\n"
-            "</think>"
-        )
+
         
         # 找到學門代碼
         discipline_row = self.df_discipline[
@@ -1105,18 +1097,18 @@ Bureau Veritas的招募團隊
         response = ollama.chat(
             model=self.model_name,
             messages=[
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": prefill_text}
+                {"role": "user", "content": prompt}
             ],
             options={
                 'num_ctx': 4096,
                 'temperature': 0.1,
                 'seed': random_seed
-            }
+            },
+            think = self.think
         )
         
-        full_content = response['message'].get('content', '')
-        result = full_content.replace(prefill_text, "").strip()
+        result = response['message'].get('content', '')
+
         return result
     
     def _calculate_department_score(
@@ -1200,12 +1192,7 @@ Bureau Veritas的招募團隊
     
     def _classify_school(self, education_text: str, random_seed: int) -> str:
         """分類學校等級"""
-        prefill_text = (
-            "<think>\n"
-            "我正在執行學歷判斷任務，我需要根據上面的指引進行最嚴謹專業的學歷科系判斷\n"
-            "接下來我將直接進行上述指令提示的輸出，並且嚴格遵守指令要求的格式。\n"
-            "</think>"
-        )
+
         
         prompt = f"""
         【系統強制指令：你現在是精密台灣大專院校分類器。你只能從指定代碼中挑選一個輸出。】
@@ -1227,18 +1214,18 @@ Bureau Veritas的招募團隊
         response = ollama.chat(
             model=self.model_name,
             messages=[
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": prefill_text}
+                {"role": "user", "content": prompt}
             ],
             options={
                 'num_ctx': 4096,
                 'temperature': 0.1,
                 'seed': random_seed
-            }
+            },
+            think = self.think
         )
         
-        full_content = response['message'].get('content', '')
-        result = full_content.replace(prefill_text, "").strip()
+        result = response['message'].get('content', '')
+
         return result
     
     def _classify_mode(self, education_text: str) -> str:
@@ -1341,11 +1328,7 @@ Bureau Veritas的招募團隊
         """
 
             
-        prefill_text = (
-            "<think>\n"
-            "不需要過度思考，直接針對履歷進行總結。\n"
-            "</think>\n"
-        )
+
         
         prompt = (
             "請根據該篇履歷內容進行300~500字的專業總結"
@@ -1361,17 +1344,16 @@ Bureau Veritas的招募團隊
             model=self.model_name,
             messages=[
                 {"role": "system", "content": f"我是專業的人資助理，我擅長於總結履歷資訊，確保所有重要資訊都有被提取與保留，也絕對不會自行推測或遐想其具備的能力或資質，完全根據履歷內容進行總結。"},
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": prefill_text}
+                {"role": "user", "content": prompt}
             ],
             options={
                 'num_ctx': self.num_ctx,
                 'temperature': 0.6
-            }
+            },
+            think =self.think
         )
         
-        full_content = response['message'].get('content', '')
-        result = full_content.replace(prefill_text, "").strip()
+        result = response['message'].get('content', '')
 
         return result
 

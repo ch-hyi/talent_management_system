@@ -1,6 +1,7 @@
 """
 人才資料模型
 """
+from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
@@ -214,46 +215,73 @@ class TalentUpdateItem(BaseModel):
     error_message:str =None
     updates: Dict[str, Any]
 
+
+from typing import List
+from pydantic import BaseModel
+
+
 class TalentBatchUpdateRequest(BaseModel):
     """
     統一的更新請求 (支援單筆或批次)
-    
+
     批次更新範例:
-    {"edit":[
-         {
-            "source":"104",
-            "source_id":"123456",
-            "updates": {"current_status": "面試中"}},
-        },
-        {
-            "source":"104",
-            "source_id":"123457",
-            "error_message":"缺少信箱",
-            "updates": {"score": "90","name":"張五"}},
-        }]
-        ,
-        "operator":"張三"
+    {
+        "edit": [
+            {
+                "source": "104",
+                "source_id": "123456",
+                "updates": {"current_status": "面試中"}
+            },
+            {
+                "source": "104",
+                "source_id": "123457",
+                "error_message": "缺少信箱",
+                "updates": {"score": "90", "name": "張五"}
+            }
+        ],
+        "operator": "張三"
     }
     """
     edit: List[TalentUpdateItem]
     operator: str
 
-    @staticmethod
-    def create_batch_request(
-    talent: Talent,
-    operator: str
+    @classmethod
+    def from_talent(
+        cls, 
+        talent: Talent, 
+        operator: str
     ) -> TalentBatchUpdateRequest:
-
-        return TalentBatchUpdateRequest(
+        """單筆 Talent 轉換為 UpdateRequest"""
+        # 假設 Talent 為 Pydantic Model，排除識別用的 key
+        updates_dict = talent.model_dump(exclude={"source", "source_id"}, exclude_unset=True)
+        
+        return cls(
             edit=[
                 TalentUpdateItem(
                     source=talent.source,
                     source_id=talent.source_id,
-                    updates=talent.to_dict()
+                    updates=updates_dict
                 )
             ],
             operator=operator
         )
+
+    @classmethod
+    def from_talents(
+        cls, 
+        talents: List[Talent], 
+        operator: str
+    ) -> TalentBatchUpdateRequest:
+        """多筆 Talent 轉換為 Batch UpdateRequest"""
+        items = [
+            TalentUpdateItem(
+                source=t.source,
+                source_id=t.source_id,
+                updates=t.model_dump(exclude={"source", "source_id"}, exclude_unset=True)
+            )
+            for t in talents
+        ]
+        return cls(edit=items, operator=operator)
 
 # ==========================================
 # Talent 篩選條件模型

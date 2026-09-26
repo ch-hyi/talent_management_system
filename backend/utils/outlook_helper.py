@@ -12,11 +12,14 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import re
 from ..models.talent import Talent
-
+from dotenv import load_dotenv
+import os
+from pathlib import Path
+current_file = Path(__file__).resolve()
+dotenv_path = current_file.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=dotenv_path)
+MSG_BACKUP_DIR = os.getenv("MSG_BACKUP_DIR")
 # ==================== 設定 ====================
-
-MSG_BACKUP_DIR = "C:/Users/rchang4/talent_system/frontend/static/msg_backup"
-JD_PATH = "C:/Users/rchang4/talent_system/backend/data/jd_fake.xlsx"
 
 # 確保目錄存在
 os.makedirs(MSG_BACKUP_DIR, exist_ok=True)
@@ -199,7 +202,7 @@ def save_mail_to_html(mail_item, name: str, source_id: str) -> Optional[str]:
 
 # ==================== 收件人管理 ====================
 
-def get_senders(talent:Talent, outlook) -> List[str]:
+def get_senders(recommender,vacancy, outlook) -> List[str]:
     """
     取得應發送郵件的收件者清單
     
@@ -217,19 +220,16 @@ def get_senders(talent:Talent, outlook) -> List[str]:
     sender_list = []
     
     try:
-        # 1️⃣ 從 JD 取得主管清單
-        jd = pd.read_excel(JD_PATH)
-        row = jd[jd["職位"] == talent.vacancy]
-        
-        if not row.empty:
-            supervisors_str = row["主管"].iloc[0]
+    
+        if not vacancy:
+            supervisors_str = vacancy["manager"].iloc[0]
             if pd.notna(supervisors_str):
                 supervisors = [x.strip() for x in str(supervisors_str).split(",")]
                 sender_list.extend(supervisors)
         
         # 2️⃣ 加入推薦人
-        if talent.recommender and talent.recommender not in sender_list:
-            sender_list.append(talent.recommender)
+        if recommender and recommender not in sender_list:
+            sender_list.append(recommender)
         
         # 3️⃣ 轉換為 SMTP 格式並去重
         clean_senders = []

@@ -4,7 +4,12 @@
 """
 import os
 from dataclasses import dataclass
-from typing import Optional
+
+from dotenv import load_dotenv
+from pathlib import Path
+current_file = Path(__file__).resolve()
+dotenv_path = current_file.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
 @dataclass
 class DatabaseConfig:
@@ -13,13 +18,13 @@ class DatabaseConfig:
     # ==================== 資料庫路徑 ====================
     
     # 人才資料庫路徑
-    TALENT_DB_PATH: str = "C:/Users/rchang4/talent_system/backend/data/104_talent.db"
+    TALENT_DB_PATH: str = os.getenv("TALENT_DB")
     
     # 日誌資料庫路徑
-    LOG_DB_PATH: str = "C:/Users/rchang4/talent_system/backend/data/log.db"
+    LOG_DB_PATH: str = os.getenv("LOG_DB")
 
     # 使用者資料庫路徑
-    USER_DB_PATH: str = "C:/Users/rchang4/talent_system/backend/data/user.db"
+    USER_DB_PATH: str = os.getenv("USER_DB")
     # ==================== 連線池配置 ====================
     
     # 讀取連線池大小（建議 5-20）

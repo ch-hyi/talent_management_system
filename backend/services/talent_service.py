@@ -12,7 +12,7 @@ from ..models.response import APIResponse
 from ..models.talent import  TalentFilter ,TalentUpdateRequest,Talent,TalentBatchUpdateRequest ,TalentOCRRequest
 from ..models.log import LogEntry
 import traceback
-from .ocr_service import run_ocr
+
 from .local_llm import run_score 
 from .send_service import create_meeting,cancel_meeting,update_meeting,send_mail
 from .code_translator import district_to_code
@@ -245,6 +245,7 @@ class TalentService:
             return APIResponse(success=False,error=str(e))
 
     def ocr(self, request: TalentOCRRequest)->APIResponse:
+        from .ocr_service import run_ocr
         task = run_ocr.apply_async(args=[ request.file_path,request.username],queue='ocr_queue')
         print(task.id)
         if task:
@@ -632,8 +633,8 @@ class TalentService:
                     rescore_note += (
                         f"\n<p>使用者：System 於 "
                         f"{update_columns['update_time']} 留言："
-                        f"{request.operator} 將其職缺從 {raw["vacancy"]}"
-                        f"(score:{raw["score"]} | distance:{raw["score_distance"]},experience:{raw["score_experience"]},age:{raw["score_age"]},education:{raw["score_education"]}) 改為 "
+                        f"{request.operator} 將其職缺從 {raw['vacancy']}"
+                        f"(score:{raw['score']} | distance:{raw['score_distance']},experience:{raw['score_experience']},age:{raw['score_age']},education:{raw['score_education']}) 改為 "
                         f"\n"
                         f"改為 {update_columns['vacancy']}</p>"
                     )

@@ -2,3 +2,4 @@ backend/data/*
 !backend/data/.gitkeep
 frontend/static/*
 !frontend/static/.gitkeep
+venv

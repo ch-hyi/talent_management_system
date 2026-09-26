@@ -13,6 +13,7 @@ from ..config import REDIS_URL
 import traceback
 # ==================== 郵件發送 ====================
 sending_service = None
+vacancy_service = None
 log_repo = None
 outlook = None
 backend_service = Celery('mail_scoring_system',
@@ -339,7 +340,10 @@ def init_worker(**kwargs):
     outlook = win32com.client.Dispatch("Outlook.Application")
     db_manager.connect()
     log_repo = LogRepository()
+    from ..api.vacancy_controller import get_vacancy_service
+    global vacancy_service 
     logging.basicConfig(level=logging.INFO)
+    vacancy_service = get_vacancy_service()
     sending_service = SendingService(outlook)
     logging.info("✅ Sending Worker 準備就緒")
 
@@ -375,7 +379,7 @@ def send_status_update(to, talent:Talent, stage_info, reply_warning, warning_tex
 def send_mail( talent,to,attachments,mail_subject,mail_content):
     print("sendmail")
     status ,id = sending_service.send(to,attachments,mail_subject,mail_content)
-    log_entry = LogEntry.create_new(talent["source"],talent["source_id"],talent["name"],1,"SendingService","",status,"UPDATE",None,talent["vacancy"],"","",f"Send mail to {talent["name"]} {status} {id if id else ""}","")
+    log_entry = LogEntry.create_new(talent["source"],talent["source_id"],talent["name"],1,"SendingService","",status,"UPDATE",None,talent["vacancy"],"","",f"Send mail to {talent['name']} {status} {id if id else ''}","")
     log_repo.create_log(log_entry)
 
 @backend_service.task(name='tasks.create_meeting', max_retries=3)
@@ -414,7 +418,7 @@ def create_meeting( mail_item, talent, meeting_time, location,
         status ="FAILED"
         logging.error(f"❌ 建立會議失敗: {e}")
 
-    log_entry = LogEntry.create_new(talent.source,talent.source_id,talent.name,1,"SendingService","",status,"UPDATE",None,talent.vacancy,"","",f"Create meeting with {recipients} {status} {meeting_id if meeting_id else ""}","","")
+    log_entry = LogEntry.create_new(talent.source,talent.source_id,talent.name,1,"SendingService","",status,"UPDATE",None,talent.vacancy,"","",f"Create meeting with {recipients} {status} {meeting_id if meeting_id else ''}","","")
     log_repo.create_log(log_entry)
 
 @backend_service.task(name='tasks.update_meeting', max_retries=3)
@@ -453,7 +457,7 @@ def update_meeting( mail_item, talent, meeting_time, location,
         status ="FAILED"
         logging.error(f"❌ 建立會議失敗: {e}")
 
-    log_entry = LogEntry.create_new(talent.source,talent.source_id,talent.name,1,"SendingService","",status,"UPDATE",None,talent.vacancy,f"Create meeting with {recipients} {status} {meeting_id if meeting_id else ""}")
+    log_entry = LogEntry.create_new(talent.source,talent.source_id,talent.name,1,"SendingService","",status,"UPDATE",None,talent.vacancy,f"Create meeting with {recipients} {status} {meeting_id if meeting_id else ''}")
     log_repo.create_log(log_entry)
 
 
@@ -488,7 +492,8 @@ def send_ai_result_notification(talent: Talent, errors: List[str]):
     """發送 AI 評分結果通知信"""
     # 判斷是否通過
     talent_obj = Talent.from_dict(talent)
-    senders = get_senders(talent_obj,outlook)
+    vacancy = vacancy_service.query_vacancies({"position_title":talent_obj.vacancy},1)
+    senders = get_senders(talent_obj.recommender,vacancy[0],outlook)
     if talent_obj.score and talent_obj.score >= 60:
         result = "通過 AI 鑑定"
         color = "#28a745"

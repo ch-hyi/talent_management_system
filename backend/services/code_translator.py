@@ -1,11 +1,16 @@
 import pandas as pd
 from geopy.distance import geodesic
 import math
+from dotenv import load_dotenv
+import os
+from pathlib import Path
+current_file = Path(__file__).resolve()
+dotenv_path = current_file.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
-
-df = pd.read_excel("C:/Users/rchang4/auto_resume/1050429_行政區經緯度.ods", engine="odf")
-df_Lab = pd.read_excel("C:/Users/rchang4/auto_resume/公司經緯度.xlsx")
-df_tw = pd.read_excel("C:/Users/rchang4/auto_resume/taiwan_zipcode_clean.xlsx")
+df = pd.read_excel(os.getenv("COORDINATE_FILE"), engine="odf")
+df_Lab = pd.read_excel(os.getenv("COMPANY_POSITION_FILE"))
+df_tw = pd.read_excel(os.getenv("TAIWAN_ZIPCODE_FILE"))
 
 def search(code):
     
